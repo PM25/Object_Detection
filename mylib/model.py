@@ -1,15 +1,14 @@
 import torch
-from torch import nn
-import torch.utils.data as Data
-import torchvision
-
+from mylib.image import Image
 
 class Model:
     def __init__(self, model):
         self.model = model
 
 
+    # Training the model
     def train(self, loader, loss_func, optimizer, n_epochs=1, show_info=True):
+        self.model.train(True)
         model = self.model.cuda()
 
         for epoch in range(n_epochs):
@@ -27,5 +26,19 @@ class Model:
                     print("Epoch {} | Step {} | Loss {}".format(epoch, step, loss))
 
 
-    def get_acc(self):
-        pass
+    # Get Accuracy
+    def get_acc(self, loader, acc_func):
+        self.model.eval()
+        model = self.model.cpu()
+
+        total_acc = 0
+        total_count = 0
+        for batch_x, batch_y in loader:
+            preds = self.model(batch_x)
+            for (pred, y) in zip(preds, batch_y):
+                acc = acc_func(y, pred)
+                total_acc += acc
+                total_count += 1
+
+        avg_acc = total_acc/total_count
+        return avg_acc
