@@ -29,11 +29,12 @@ class Model:
     # Get Accuracy
     def get_acc(self, loader, acc_func):
         self.model.eval()
-        model = self.model.cpu()
+        model = self.model.cuda()
 
         total_acc = 0
         total_count = 0
-        for batch_x, batch_y in loader:
+        for (batch_x, batch_y) in loader:
+            batch_x = batch_x.cuda()
             preds = self.model(batch_x)
             for (pred, y) in zip(preds, batch_y):
                 acc = acc_func(y, pred)
@@ -42,3 +43,9 @@ class Model:
 
         avg_acc = total_acc/total_count
         return avg_acc
+
+
+    def save(self, name="object_detection.pkl"):
+        save_path = "models/" + name
+        torch.save(self.model, save_path)
+        print("Model {} is saved!".format(name))

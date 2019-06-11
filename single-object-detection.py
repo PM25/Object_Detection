@@ -19,11 +19,9 @@ transform = transforms.Compose([
     transforms.Normalize(mean=(.5, .5, .5), std=(.5, .5, .5))
 ])
 
-torch_dataset = torchvision.datasets.ImageFolder(root=train_dir, transform=transform)
-loader = Data.DataLoader(dataset=torch_dataset, batch_size=5, shuffle=True, num_workers=2)
 
 if __name__ == "__main__":
-    model = torch.load(models_dir / "model.pkl")
+    model = torch.load(models_dir / "object_detection.pkl")
     model = model.cpu()
 
     cap = cv2.VideoCapture("dogs_and_cats.avi")
