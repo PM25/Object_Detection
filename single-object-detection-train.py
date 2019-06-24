@@ -1,43 +1,43 @@
-import math
-import torch.utils.data as Data
 import matplotlib.pyplot as plt
 
-from mylib.data import TorchData
+from mylib.data import MyData
 from mylib.model import Model
 
 
 # Parameters
 EPOCH = 20
+log_interval = 1
+
+# Record of Accuracy & Loss Value
+acc_his = {"train": [], "val": []}
+loss_his = {"train": [], "val": []}
 
 
 if __name__ == "__main__":
     # Load Data
-    train_data = TorchData("data")
-    torch_dataset = train_data.load_dataset()
+    train_data = MyData("data")
+    train_loader, val_loader = train_data.load_split_dataloader(val_split=.2)
 
-    # Split Dataset to Training Dataset & Validation Dataset
-    val_count = math.floor(len(torch_dataset) * 0.2)
-    train_count = len(torch_dataset) - val_count
-    train_dataset, val_dataset = Data.random_split(torch_dataset, [train_count, val_count])
-
-    # Load Dataset into Torch DataLoader
-    train_loader = Data.DataLoader(dataset=train_dataset, batch_size=64, shuffle=True, num_workers=0)
-    val_loader = Data.DataLoader(dataset=val_dataset, batch_size=64, shuffle=True, num_workers=0)
-
-
-    acc_his = { "train": [], "val":[] }
-    loss_his = { "train": [], "val": [] }
-
-    # Training
-    model = Model()
+    model = Model(LR=1e-3, enable_cuda=True)
     for step in range(EPOCH):
-        print("Epoch {}".format(step))
-        model.train(train_loader)
-        acc_his["train"].append(model.get_acc(train_loader))
-        acc_his["val"].append(model.get_acc(val_loader))
+        # Training
+        model.train(train_loader, verbose=True)
 
-    model.save_model("test.pkl")
+        # Get Training Accuracy & Validation Accuracy
+        train_acc = model.get_acc(train_loader, False)
+        val_acc = model.get_acc(val_loader, False)
+        acc_his["train"].append(train_acc)
+        acc_his["val"].append(val_acc)
+
+        if(step % log_interval == 0):
+            print('-' * 15, end=' ')
+            print("EPOCH {} | Train Acc {:.4f} | Val Acc {:.4f}".format(step, train_acc, val_acc), end=' ')
+            print('-' * 15)
+
+    # Show the accuracy result.
     for idx in acc_his:
         plt.plot(acc_his[idx], label=idx)
     plt.legend()
     plt.show()
+
+    model.save_model("object_detection.pkl")

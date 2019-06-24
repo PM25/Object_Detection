@@ -1,40 +1,30 @@
 import torch
-import torchvision
-from torch import nn
-from torchvision import transforms
-import torch.utils.data as Data
 from pathlib import Path
-import cv2
-import numpy as np
+import argparse
 
+from mylib.data import MyData
+from mylib.predict import Predict
+
+# Arguments
+parser = argparse.ArgumentParser(description="Single Object Detection.")
+parser.add_argument("--model", "-m", type=str, default="object_detection.pkl", help="Path to model.")
+parser.add_argument("--image", "-i", type=str, default="img", help="Path to folder that contain image files.")
+parser.add_argument("--video", "-v", type=str, default="video", help="Path to video file.")
+parser.add_argument("--cuda", "-c", type=bool, default=False, help="Enable Cuda?")
+args = parser.parse_args()
+
+# Path
 models_dir = Path("models")
 
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(mean=(.5, .5, .5), std=(.5, .5, .5))
-])
 
-
+# Start from here!
 if __name__ == "__main__":
-    model = torch.load(models_dir/"object_detection.pkl", map_location=lambda storage, loc: storage)
-    model = model.cpu()
+    model = torch.load(models_dir/args.model, map_location=lambda storage, loc: storage)
+    if(args.cuda): model.cuda()
+    else: model.cpu()
 
-    cap = cv2.VideoCapture("dogs_and_cats.avi")
+    names = MyData("data").names
 
-    while(cap.isOpened()):
-        ret, frame = cap.read()
-        torch_data = transform(cv2.resize(frame, (112, 112)))
-        # torch_data = transform(frame)
-        torch_data = torch.unsqueeze(torch_data, 0)
-        (pos_x, pos_y, box_w, box_h) = model(torch_data)[0]
-        height, width, channels = frame.shape
-        pos_x *= width
-        pos_y *= height
-        box_w *= width
-        box_h *= height
-        img = cv2.rectangle(frame, (pos_x - box_w / 2, pos_y - box_h / 2), (pos_x + box_w / 2, pos_y + box_h / 2), (255, 0, 0), 3)
-        cv2.imshow('frame', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    cap.release()
-    cv2.destroyAllWindows()
+    predict = Predict(model, names, img_dir=args.image, video_path=args.video)
+    predict.img_prediction()
+    predict.video_prediction()

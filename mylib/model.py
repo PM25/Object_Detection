@@ -15,34 +15,37 @@ class Model:
 
 
     # Training the model
-    def train(self, loader, n_epochs=1, show_info=True):
+    def train(self, loader, verbose=True):
         self.model.train(True)
         self.model = self.to_cuda(self.model)
 
-        for epoch in range(n_epochs):
-            for step, (batch_x, batch_y) in enumerate(loader):
-                batch_x = self.to_cuda(batch_x)
-                batch_y = self.to_cuda(batch_y)
+        for step, (batch_x, batch_y) in enumerate(loader):
+            batch_x = self.to_cuda(batch_x)
+            batch_y = self.to_cuda(batch_y)
+            batch_box_y = batch_y[:, 1:5]
+            batch_class_y = batch_y[:, 5:]
 
-                box_preds, class_preds = self.model(batch_x)
-                loss = self.loss_func(box_preds, batch_y)
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
+            box_preds, class_preds = self.model(batch_x)
+            box_loss = self.loss_func(box_preds, batch_box_y)
+            class_loss = self.loss_func(class_preds, batch_class_y)
+            loss = box_loss + class_loss
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
 
-                if (show_info and step % 5 == 0):
-                    print("Epoch {} | Step {} | Loss {}".format(epoch, step, loss))
+            if (verbose and step % 5 == 0):
+                print("Step {} | Loss {:.4f}".format(step, loss.item()))
 
 
     # Get Accuracy
-    def get_acc(self, loader):
+    def get_acc(self, loader, enable_cuda=True):
         self.model.eval()
-        self.model = self.to_cuda(self.model)
+        self.model = self.to_cuda(self.model, enable_cuda)
 
         total_acc = 0
         total_count = 0
         for (batch_x, batch_y) in loader:
-            batch_x = self.to_cuda(batch_x)
+            batch_x = self.to_cuda(batch_x, enable_cuda)
             box_preds, class_preds = self.model(batch_x)
             for (box_pred, y) in zip(box_preds, batch_y):
                 acc = self.acc_func(y, box_pred)
@@ -59,9 +62,11 @@ class Model:
         print("Model {} is saved!".format(name))
 
 
-    def to_cuda(self, tensor):
-        if(self.enable_cuda == True):
+    def to_cuda(self, tensor, enable=True):
+        if(self.enable_cuda == True and enable == True):
             tensor = tensor.cuda()
+        else:
+            tensor = tensor.cpu()
 
         return tensor
 
@@ -84,4 +89,5 @@ class MyResnet(nn.Module):
         x = self.model_resnet(x)
         out1 = self.fc1(x)
         out2 = self.fc2(x)
+
         return out1, out2
