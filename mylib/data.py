@@ -35,7 +35,7 @@ class MyData():
                 else:
                     line = lines[0].strip('\n')
                     (classes, cen_x, cen_y, box_w, box_h) = list(map(float, line.split(' ')))
-                    torch_data = torch.FloatTensor([1] + [cen_x, cen_y, box_w, box_h] + self.one_hot_encode(classes))
+                    torch_data = torch.FloatTensor([1] + [cen_x, cen_y, box_w, box_h] + [classes])
                     y.append(torch_data)
 
             img = Image.open(str(file_name)).convert('RGB')

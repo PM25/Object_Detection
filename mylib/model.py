@@ -6,10 +6,11 @@ from mylib import utils
 
 
 class Model:
-    def __init__(self, LR=1e-3, enable_cuda=True):
+    def __init__(self, LR=5e-3, enable_cuda=True):
         self.enable_cuda = enable_cuda
         self.model = self.to_cuda(MyResnet(4, 2, enable_cuda))
         self.loss_func = self.to_cuda(nn.SmoothL1Loss())
+        self.loss_func2 = self.to_cuda(nn.CrossEntropyLoss())
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=LR)
         self.acc_func = utils.iou
 
@@ -23,12 +24,12 @@ class Model:
             batch_x = self.to_cuda(batch_x)
             batch_y = self.to_cuda(batch_y)
             batch_box_y = batch_y[:, 1:5]
-            batch_class_y = batch_y[:, 5:]
+            batch_class_y = self.to_cuda(batch_y[:, -1].type(torch.LongTensor))
 
             box_preds, class_preds = self.model(batch_x)
             box_loss = self.loss_func(box_preds, batch_box_y)
-            class_loss = self.loss_func(class_preds, batch_class_y)
-            loss = box_loss + class_loss
+            class_loss = self.loss_func2(class_preds, batch_class_y)
+            loss = (box_loss + class_loss)/2
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -46,11 +47,19 @@ class Model:
         total_count = 0
         for (batch_x, batch_y) in loader:
             batch_x = self.to_cuda(batch_x, enable_cuda)
+            batch_box_y = batch_y[:, 1:5]
+            batch_class_y = self.to_cuda(batch_y[:, -1].type(torch.LongTensor))
             box_preds, class_preds = self.model(batch_x)
-            for (box_pred, y) in zip(box_preds, batch_y):
+            # Accuracy of Bounding Box
+            for (box_pred, y) in zip(box_preds, batch_box_y):
                 acc = self.acc_func(y, box_pred)
                 total_acc += acc
                 total_count += 1
+            # # Accuracy of Classification
+            _, class_preds_indices = torch.max(class_preds, 1)
+            class_preds_indices = class_preds_indices.cuda()
+            total_acc += sum(class_preds_indices == batch_class_y).item()
+            total_count += len(class_preds_indices)
 
         avg_acc = total_acc/total_count
         return avg_acc

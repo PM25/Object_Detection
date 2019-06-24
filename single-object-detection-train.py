@@ -5,7 +5,7 @@ from mylib.model import Model
 
 
 # Parameters
-EPOCH = 20
+EPOCH = 50
 log_interval = 1
 
 # Record of Accuracy & Loss Value
@@ -18,14 +18,14 @@ if __name__ == "__main__":
     train_data = MyData("data")
     train_loader, val_loader = train_data.load_split_dataloader(val_split=.2)
 
-    model = Model(LR=1e-3, enable_cuda=True)
+    model = Model(LR=5e-5, enable_cuda=True)
     for step in range(EPOCH):
         # Training
         model.train(train_loader, verbose=True)
 
         # Get Training Accuracy & Validation Accuracy
-        train_acc = model.get_acc(train_loader, False)
-        val_acc = model.get_acc(val_loader, False)
+        train_acc = model.get_acc(train_loader, True)
+        val_acc = model.get_acc(val_loader, True)
         acc_his["train"].append(train_acc)
         acc_his["val"].append(val_acc)
 

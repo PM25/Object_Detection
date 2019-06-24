@@ -35,4 +35,4 @@ def iou(truth, pred):
     total_sz = area(pred_rect) + area(truth_rect) - overlap_sz
 
     if(overlap_sz > 0): return (overlap_sz/total_sz)
-    else: return -1
+    else: return 0
