@@ -8,20 +8,15 @@ import cv2
 import numpy as np
 
 models_dir = Path("models")
-data_dir = Path("cats_and_dogs_small")
-train_dir = data_dir/Path("train")
-validation_dir = data_dir/Path("validation")
-test_dir = data_dir/Path("test")
 
 transform = transforms.Compose([
-    # transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=(.5, .5, .5), std=(.5, .5, .5))
 ])
 
 
 if __name__ == "__main__":
-    model = torch.load(models_dir / "object_detection.pkl")
+    model = torch.load(models_dir/"object_detection.pkl", map_location=lambda storage, loc: storage)
     model = model.cpu()
 
     cap = cv2.VideoCapture("dogs_and_cats.avi")

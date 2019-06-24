@@ -1,4 +1,3 @@
-import math
 from pathlib import Path
 import torch
 import torch.utils.data as Data
@@ -43,7 +42,7 @@ class TorchData():
         return (x, y)
 
 
-    def load_dataset(self, ):
+    def load_dataset(self):
         x, y = self.load()
         # Put training data into torch loader
         tensor_x = torch.stack(x)
